@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATSA · Diagnóstico de Posiciones Clave</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<style>
+  :root {
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #6b7280;
+    --color-text-tertiary: #9ca3af;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f9fafb;
+    --color-border-primary: #d1d5db;
+    --color-border-secondary: #e5e7eb;
+    --color-border-tertiary: #f3f4f6;
+    --border-radius-lg: 12px;
+    --border-radius-md: 8px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: #f5f6fa; min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  .app { max-width: 680px; width: 100%; }
+  .brand-meta { font-size: 11px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+  .brand-title { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .progress-bar { height: 3px; background: var(--color-border-tertiary); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .progress-fill { height: 3px; background: #1D9E75; border-radius: 2px; transition: width .4s; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; margin-bottom: .85rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .area-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .area-tab { padding: 5px 14px; border-radius: 20px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); }
+  .area-tab.active { background: #E1F5EE; border-color: #1D9E75; color: #0F6E56; font-weight: 500; }
+  .emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin-bottom: 1.25rem; }
+  .emp-card { padding: 10px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); cursor: pointer; background: var(--color-background-primary); transition: border-color .15s; }
+  .emp-card:hover { border-color: var(--color-border-secondary); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+  .emp-card.evaluated { border-color: #1D9E75; background: #E1F5EE; }
+  .emp-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .emp-role { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .emp-sede { font-size: 10px; color: var(--color-text-tertiary); margin-top: 1px; }
+  .emp-badge { display: inline-block; margin-top: 5px; font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .emp-card.evaluated .emp-badge { background: #9FE1CB; color: #085041; }
+  .dim-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .dim-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dim-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); line-height: 1.4; }
+  .dim-subtitle { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.4; }
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: .85rem 0; }
+  .q-row { margin-bottom: 1rem; }
+  .q-text { font-size: 13px; color: var(--color-text-primary); margin-bottom: 8px; line-height: 1.5; }
+  .scale-wrap { display: flex; gap: 5px; }
+  .s-btn { width: 34px; height: 34px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+  .s-btn:hover { border-color: #1D9E75; color: #0F6E56; }
+  .s-btn.sel { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+  .scale-anchors { display: flex; justify-content: space-between; font-size: 10px; color: var(--color-text-tertiary); margin-top: 3px; }
+  .risk-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .risk-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); }
+  .risk-pill.sel-alto { background: #FCEBEB; border-color: #E24B4A; color: #791F1F; }
+  .risk-pill.sel-medio { background: #FAEEDA; border-color: #BA7517; color: #633806; }
+  .risk-pill.sel-bajo { background: #EAF3DE; border-color: #639922; color: #27500A; }
+  .textarea-f { width: 100%; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; font-size: 13px; font-family: var(--font-sans); color: var(--color-text-primary); background: var(--color-background-primary); resize: vertical; min-height: 56px; }
+  .textarea-f:focus { outline: none; border-color: #1D9E75; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn { padding: 8px 18px; border-radius: var(--border-radius-md); font-size: 13px; cursor: pointer; font-family: var(--font-sans); transition: all .15s; }
+  .btn-sec { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); }
+  .btn-sec:hover { background: var(--color-background-secondary); }
+  .btn-pri { background: #1D9E75; border: none; color: #fff; font-weight: 500; }
+  .btn-pri:hover { background: #0F6E56; }
+  .btn-pri:disabled { background: var(--color-border-tertiary); cursor: not-allowed; color: var(--color-text-tertiary); }
+  .score-preview { background: #E1F5EE; border-radius: var(--border-radius-md); padding: 12px 14px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+  .sum-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.5rem; }
+  .sum-box { background: var(--color-background-primary); border-radius: var(--border-radius-md); padding: .85rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .sum-num { font-size: 22px; font-weight: 500; }
+  .sum-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .res-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; margin-bottom: .75rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .score-pill { padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .pill-a { background: #E1F5EE; color: #0F6E56; }
+  .pill-b { background: #FAEEDA; color: #633806; }
+  .pill-c { background: #FCEBEB; color: #791F1F; }
+  .score-bar-bg { background: var(--color-background-secondary); border-radius: 4px; height: 5px; margin: 8px 0; }
+  .score-bar-fill { height: 5px; border-radius: 4px; }
+  .dim-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .dim-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); }
+  .action-plan { margin-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 10px; }
+  .action-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .action-item { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; margin-bottom: 4px; }
+  .action-dot { width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .risk-badge { font-size: 11px; padding: 2px 10px; border-radius: 10px; font-weight: 500; }
+  .risk-alto { background: #FCEBEB; color: #791F1F; }
+  .risk-medio { background: #FAEEDA; color: #633806; }
+  .risk-bajo { background: #EAF3DE; color: #27500A; }
+  .filter-row { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn { padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-secondary); }
+  .filter-btn.active { background: var(--color-background-secondary); border-color: var(--color-border-primary); color: var(--color-text-primary); font-weight: 500; }
+  input[type=text] { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 7px 10px; font-size: 13px; font-family: var(--font-sans); color: var(--color-text-primary); background: var(--color-background-primary); }
+  input[type=text]:focus { outline: none; border-color: #1D9E75; }
+</style>
+</head>
+<body>
+<div class="app" id="root"></div>
+<script>
+const AREA_LABELS = { COMERCIAL: 'Comercial', TECNICA: 'Técnica', ADMIN: 'Administración' };
+const AREAS = ['COMERCIAL', 'TECNICA', 'ADMIN'];
+
+const EMP = [
+  {id:2,  name:'Chinni Hector',           role:'Analista Comercial',        area:'COMERCIAL', sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:8,  name:'Cristofaro Rafael',        role:'Analista Comercial',        area:'COMERCIAL', sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:21, name:'Lopez Marcela',            role:'Analista Comercial',        area:'COMERCIAL', sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:31, name:'Bourbotte Sheila',         role:'Analista Marketing',        area:'COMERCIAL', sede:'Tesla',   rep:'Regnier Solange'},
+  {id:104,name:'Regnier Solange',          role:'Coordinadora Licitaciones', area:'COMERCIAL', sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:114,name:'Martinez Otero Felipe',    role:'Ejecutivo Comercial',       area:'COMERCIAL', sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:4,  name:'Blot Silvia',              role:'Analista Administración',   area:'ADMIN',     sede:'Zepita',  rep:'Matias Lyardet'},
+  {id:6,  name:'Magallanes Gabriela',      role:'Coordinadora Admin',        area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:11, name:'Prieto Maricel',           role:'Analista Administración',   area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:79, name:'Alvarez Jorge',            role:'Compras',                   area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:82, name:'Gallo Pablo',              role:'Comprador Sr',              area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:93, name:'Herrero Ariel',            role:'Jefe Admin. y Finanzas',    area:'ADMIN',     sede:'Tesla',   rep:'Silvestri Jorge'},
+  {id:94, name:'Rodas Anabel',             role:'Analista Admin',            area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:103,name:'Contreras Andrea',         role:'Analista Sr Admin',         area:'ADMIN',     sede:'Tesla',   rep:'Herrero Ariel'},
+  {id:26, name:'Bazile Dario',             role:'Técnico',                   area:'TECNICA',   sede:'Zepita',  rep:'Jorge Battaffarano'},
+  {id:40, name:'Debelluk Nicolas',         role:'Coord. de Logística',       area:'TECNICA',   sede:'Zepita',  rep:'Victor De Angelis'},
+  {id:42, name:'Arias Sergio',             role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Chiappe Gustavo'},
+  {id:43, name:'Arias Gonzalo',            role:'Project Manager',           area:'TECNICA',   sede:'Tesla',   rep:'Croce Federico'},
+  {id:44, name:'Rodriguez Diego',          role:'Técnico',                   area:'TECNICA',   sede:'Zepita',  rep:'Arias Sergio'},
+  {id:45, name:'Macchi Marcelo',           role:'Jefe de I+D',               area:'TECNICA',   sede:'Zepita',  rep:'Victor De Angelis'},
+  {id:47, name:'Iturrieta Leonardo',       role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Chiappe Gustavo'},
+  {id:52, name:'Mora Rivas Yuly',          role:'Project Manager',           area:'TECNICA',   sede:'Rosario', rep:'Croce Federico'},
+  {id:60, name:'Anaquin Leandro',          role:'Técnico',                   area:'TECNICA',   sede:'Tesla',   rep:'Arias Gonzalo'},
+  {id:62, name:'Chiappe Gustavo',          role:'Supervisor de Operaciones', area:'TECNICA',   sede:'Zepita',  rep:'Victor De Angelis'},
+  {id:73, name:'Colina Jannelly',          role:'Analista Técnica',          area:'TECNICA',   sede:'Zepita',  rep:'Victor De Angelis'},
+  {id:77, name:'Perez Centeno Alejandro',  role:'Project Manager',           area:'TECNICA',   sede:'Tesla',   rep:'Croce Federico'},
+  {id:84, name:'Sosa Diego',               role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Chiappe Gustavo'},
+  {id:86, name:'Cortez Javier',            role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Iturrieta Leonardo'},
+  {id:92, name:'Baiocco Diego',            role:'Jefe de Planificación',     area:'TECNICA',   sede:'Zepita',  rep:'Victor De Angelis'},
+  {id:96, name:'Cibraro Maximiliano',      role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Iturrieta Leonardo'},
+  {id:100,name:'Lareu Nicolas',            role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Iturrieta Leonardo'},
+  {id:101,name:'Paulik Roberto',           role:'Jefe de Obra',              area:'TECNICA',   sede:'Córdoba', rep:'Arias Gonzalo'},
+  {id:102,name:'Croce Federico',           role:'Gerente de Operaciones',    area:'TECNICA',   sede:'Tesla',   rep:'Senoff Jonatan'},
+  {id:106,name:'Farias Elio',              role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Iturrieta Leonardo'},
+  {id:107,name:'Peraza Malena',            role:'Analista Operaciones',      area:'TECNICA',   sede:'Zepita',  rep:'Arias Gonzalo'},
+  {id:108,name:'Ledesma Marcos',           role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Chiappe Gustavo'},
+  {id:111,name:'Martinez Franco',          role:'Project Manager',           area:'TECNICA',   sede:'Zepita',  rep:'Arias Sergio'},
+  {id:112,name:'Arroyo Natalia',           role:'Operadora Mesa de Ayuda',   area:'TECNICA',   sede:'Tesla',   rep:'Cesar Casallas'},
+  {id:113,name:'Santillan Alan',           role:'Técnico de Campo',          area:'TECNICA',   sede:'Zepita',  rep:'Iturrieta Leonardo'},
+  {id:115,name:'Di Marco Martin',          role:'Project Manager',           area:'TECNICA',   sede:'Tesla',   rep:'Croce Federico'},
+  {id:116,name:'Muñoz Fiori Gonzalo',      role:'Técnico de Campo',          area:'TECNICA',   sede:'Rosario', rep:'Emanuel Collosa'},
+];
+
+const DIMS = [
+  {id:'impacto', icon:'ti-bolt', bg:'#FAEEDA', ic:'#BA7517', title:'Impacto estratégico', sub:'Alineación con objetivos del negocio y consecuencias de la vacante',
+   qs:[{id:'i1',t:'Si esta posición quedara vacante mañana sin previo aviso, ¿cuál sería el impacto en los resultados del negocio?',lo:'Sin impacto visible',hi:'Pérdida crítica de negocio'},
+       {id:'i2',t:'¿Qué tan alineado está este rol con los objetivos estratégicos de ATSA para los próximos 2 años?',lo:'Rol de soporte general',hi:'Rol clave para la estrategia'}]},
+  {id:'reemplazo', icon:'ti-users', bg:'#E6F1FB', ic:'#185FA5', title:'Dificultad de reemplazo', sub:'Tiempo y esfuerzo para cubrir la posición con alguien equivalente',
+   qs:[{id:'r1',t:'¿Cuánto tiempo tomaría encontrar y contratar a alguien con el mismo nivel de competencia en el mercado?',lo:'Menos de 1 mes',hi:'Más de 6 meses o muy difícil'},
+       {id:'r2',t:'¿Cuánto tiempo adicional requeriría que esa nueva persona alcance el mismo nivel de productividad?',lo:'1 a 2 semanas',hi:'6 meses o más'}]},
+  {id:'conocimiento', icon:'ti-brain', bg:'#EEEDFE', ic:'#534AB7', title:'Conocimiento único y crítico', sub:'Grado en que el conocimiento es irreemplazable o difícil de transferir',
+   qs:[{id:'c1',t:'¿Qué tan difícil sería documentar o transferir el conocimiento tácito de esta persona sobre procesos, clientes o sistemas?',lo:'Fácil de documentar',hi:'Imposible de transferir'},
+       {id:'c2',t:'¿Esta persona tiene vínculos externos clave (clientes, proveedores, reguladores) que son propios de ella y no de la empresa?',lo:'Los vínculos son de ATSA',hi:'Los vínculos son personales'}]},
+  {id:'dependencia', icon:'ti-sitemap', bg:'#FAECE7', ic:'#993C1D', title:'Dependencia de procesos y equipo', sub:'Cuántos procesos críticos o personas dependen de este rol',
+   qs:[{id:'d1',t:'¿Cuántos procesos críticos del área dependen directamente de esta persona como responsable o ejecutante principal?',lo:'1 o ninguno',hi:'5 o más procesos críticos'},
+       {id:'d2',t:'¿Cuántas personas dependen de esta posición para tomar decisiones o recibir instrucciones de trabajo?',lo:'Nadie o muy pocos',hi:'Equipo entero o varias áreas'}]},
+  {id:'vulnerabilidad', icon:'ti-alert-triangle', bg:'#FCEBEB', ic:'#A32D2D', title:'Vulnerabilidad de la posición', sub:'Riesgo de salida y disponibilidad de sucesor interno',
+   qs:[{id:'v1',t:'¿Cómo evaluás la probabilidad de que esta persona deje la organización en los próximos 12 meses?',lo:'Muy improbable',hi:'Muy probable'},
+       {id:'v2',t:'¿Existe un sucesor interno identificado y preparado para asumir este rol si fuera necesario?',lo:'Hay un sucesor listo',hi:'No hay nadie identificado',inv:true}]},
+];
+
+const ACT = {
+  clave: {label:'Posición clave', pill:'pill-a', color:'#1D9E75', items:[
+    'Iniciar plan de sucesión formal: identificar y preparar un sucesor interno.',
+    'Documentar el conocimiento crítico: manuales, procedimientos, contactos clave.',
+    'Diseñar un plan de retención específico (compensación, desarrollo, reconocimiento).',
+    'Evaluar cobertura de emergencia: ¿quién puede asumir temporariamente?',
+    'Incluir en la agenda de revisión trimestral de RRHH y gerencia.',
+  ]},
+  relevante: {label:'Posición relevante', pill:'pill-b', color:'#BA7517', items:[
+    'Mapear candidatos internos con potencial para cubrir el rol a mediano plazo.',
+    'Iniciar transferencia parcial de conocimiento como práctica preventiva.',
+    'Monitorear señales de rotación o descontento con mayor frecuencia.',
+    'Considerar este rol en planes de desarrollo cruzado entre áreas.',
+  ]},
+  estandar: {label:'Posición estándar', pill:'pill-c', color:'#888780', items:[
+    'Asegurarse de que el puesto esté correctamente documentado y el perfil actualizado.',
+    'Mantener buenas prácticas de onboarding para facilitar el reemplazo si fuera necesario.',
+    'Evaluar si las funciones podrían redistribuirse o automatizarse en el futuro.',
+  ]},
+};
+
+let ST = { screen:'inicio', ev:'', area:'COMERCIAL', emp:null, ans:{}, risk:{}, notes:{}, filter:'todos' };
+
+function totalQ() { return DIMS.reduce((a,d) => a + d.qs.length, 0); }
+function doneQ(id) { const a = ST.ans[id]||{}; return DIMS.reduce((n,d) => n + d.qs.filter(q => a[q.id] !== undefined).length, 0); }
+function complete(id) { return doneQ(id) === totalQ() && ST.risk[id]; }
+function calcScore(id) {
+  if (!complete(id)) return 0;
+  const a = ST.ans[id]; let s = 0, c = 0;
+  DIMS.forEach(d => d.qs.forEach(q => { s += (q.inv ? (6-(a[q.id]||0)) : (a[q.id]||0)); c++; }));
+  return Math.round(s / (c*5) * 100);
+}
+function lvl(s) { return s >= 68 ? 'clave' : s >= 42 ? 'relevante' : 'estandar'; }
+function ldata(s) { return ACT[lvl(s)]; }
+
+function go(screen) { ST.screen = screen; paint(); }
+
+function paint() {
+  document.getElementById('root').innerHTML =
+    ST.screen === 'inicio' ? htmlInicio() :
+    ST.screen === 'selector' ? htmlSelector() :
+    ST.screen === 'eval' ? htmlEval() :
+    htmlResultados();
+  window.scrollTo(0,0);
+}
+
+function htmlInicio() {
+  const done = EMP.filter(e => complete(e.id)).length;
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+    <div style="width:36px;height:36px;background:#E1F5EE;border-radius:8px;display:flex;align-items:center;justify-content:center">
+      <i class="ti ti-target" style="font-size:18px;color:#0F6E56"></i>
+    </div>
+    <div><div class="brand-meta">ATSA · Vault Group · RRHH</div><div class="brand-title">Diagnóstico de posiciones clave</div></div>
+  </div>
+  <div class="card" style="border-left:3px solid #1D9E75;border-radius:0 12px 12px 0">
+    <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.7">
+      Herramienta de diagnóstico basada en <strong style="color:var(--color-text-primary);font-weight:500">5 dimensiones · 11 preguntas</strong>, alineada a la metodología de Hay Group y Mercer. Cada resultado incluye un plan de acción según el nivel de criticidad.
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Evaluador</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <i class="ti ti-user-circle" style="font-size:20px;color:var(--color-text-secondary)"></i>
+      <input type="text" id="ev-inp" placeholder="Nombre del evaluador (ej: Senoff Jonatan)" value="${ST.ev}" style="flex:1" oninput="ST.ev=this.value">
+    </div>
+  </div>
+  <div class="sum-grid">
+    <div class="sum-box"><div class="sum-num">41</div><div class="sum-lbl">Empleados</div></div>
+    <div class="sum-box"><div class="sum-num">3</div><div class="sum-lbl">Áreas</div></div>
+    <div class="sum-box"><div class="sum-num" style="color:#1D9E75">${done}</div><div class="sum-lbl">Evaluados</div></div>
+  </div>
+  <div class="btn-row" style="justify-content:flex-start;gap:10px">
+    <button class="btn btn-pri" onclick="go('selector')">Comenzar diagnóstico <i class="ti ti-arrow-right"></i></button>
+    ${done > 0 ? '<button class="btn btn-sec" onclick="go(\'resultados\')">Ver resultados</button>' : ''}
+  </div>`;
+}
+
+function htmlSelector() {
+  const filtered = EMP.filter(e => e.area === ST.area);
+  const totalDone = EMP.filter(e => complete(e.id)).length;
+  const pct = Math.round(totalDone / 41 * 100);
+  const tabs = AREAS.map(a => {
+    const n = EMP.filter(e => e.area===a && complete(e.id)).length;
+    const t = EMP.filter(e => e.area===a).length;
+    return `<button class="area-tab${a===ST.area?' active':''}" onclick="setArea('${a}')">${AREA_LABELS[a]} <span style="opacity:.65">${n}/${t}</span></button>`;
+  }).join('');
+  const cards = filtered.map(e => {
+    const done = complete(e.id);
+    const s = calcScore(e.id);
+    const lv = done ? ldata(s) : null;
+    return `<div class="emp-card${done?' evaluated':''}" onclick="openEmp(${e.id})">
+      <div class="emp-name">${e.name}</div>
+      <div class="emp-role">${e.role}</div>
+      <div class="emp-sede">${e.sede} · ${e.rep}</div>
+      ${done ? `<div class="emp-badge">${lv.label} · ${s}%</div>` : '<div class="emp-badge">Sin evaluar</div>'}
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+    <button class="btn btn-sec" onclick="go('inicio')" style="padding:5px 10px;font-size:12px"><i class="ti ti-arrow-left"></i></button>
+    <div style="flex:1"><div class="brand-meta">${ST.ev||'RRHH'}</div><div class="brand-title" style="font-size:18px">Seleccioná un empleado</div></div>
+    <button class="btn btn-sec" onclick="go('resultados')" style="font-size:12px;padding:6px 12px"><i class="ti ti-chart-bar"></i> Resultados</button>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:1rem">${totalDone} de 41 posiciones evaluadas · ${pct}% completado</div>
+  <div class="area-tabs">${tabs}</div>
+  <div class="emp-grid">${cards}</div>`;
+}
+
+function htmlEval() {
+  const e = EMP.find(x => x.id === ST.emp);
+  const a = ST.ans[e.id] || {};
+  const dq = doneQ(e.id), tq = totalQ();
+  const rk = ST.risk[e.id];
+  const allDone = dq === tq && rk;
+  const s = calcScore(e.id);
+  const parts = e.name.split(' ');
+  const ini = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+
+  let h = `<button class="btn btn-sec" onclick="go('selector')" style="padding:5px 10px;font-size:12px;margin-bottom:1rem"><i class="ti ti-arrow-left"></i> Volver</button>
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:40px;height:40px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#0F6E56;flex-shrink:0">${ini}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">${e.name}</div>
+        <div style="font-size:12px;color:var(--color-text-secondary)">${e.role} · ${AREA_LABELS[e.area]} · ${e.sede}</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary)">Reporta a: ${e.rep}</div>
+      </div>
+      <div style="font-size:12px;color:var(--color-text-secondary)">${dq}/${tq}</div>
+    </div>
+  </div>`;
+
+  DIMS.forEach((dim, di) => {
+    h += `<div class="card" style="margin-bottom:.75rem">
+      <div class="dim-header">
+        <div class="dim-icon" style="background:${dim.bg}"><i class="ti ${dim.icon}" style="font-size:14px;color:${dim.ic}"></i></div>
+        <div><div class="dim-title">${dim.title}</div><div class="dim-subtitle">${dim.sub}</div></div>
+      </div><div class="divider"></div>`;
+    dim.qs.forEach((q, qi) => {
+      const v = a[q.id];
+      h += `<div class="q-row">
+        <div class="q-text">${di*2+qi+1}. ${q.t}</div>
+        <div class="scale-wrap">${[1,2,3,4,5].map(n => `<button class="s-btn${v===n?' sel':''}" onclick="setAns('${q.id}',${n})">${n}</button>`).join('')}</div>
+        <div class="scale-anchors"><span>${q.lo}</span><span>${q.hi}</span></div>
+      </div>`;
+    });
+    h += `</div>`;
+  });
+
+  h += `<div class="card">
+    <div class="dim-header">
+      <div class="dim-icon" style="background:#FBEAF0"><i class="ti ti-alert-circle" style="font-size:14px;color:#993356"></i></div>
+      <div><div class="dim-title">Riesgo de salida — evaluación gerencial</div>
+      <div class="dim-subtitle">Criterio del evaluador basado en su conocimiento directo de la persona</div></div>
+    </div><div class="divider"></div>
+    <div class="q-text" style="margin-bottom:10px">11. En base a tu conocimiento directo, ¿cuál es el riesgo de que esta persona deje ATSA en los próximos 12 meses?</div>
+    <div class="risk-pills">
+      ${[['alto','Alto — probabilidad real'],['medio','Medio — hay señales'],['bajo','Bajo — estable']].map(([v,l]) =>
+        `<button class="risk-pill${rk===v?' sel-'+v:''}" onclick="setRisk('${v}')">${l}</button>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">Contexto y observaciones</div>
+    <textarea class="textarea-f" oninput="setNote(this.value)" placeholder="Ej: conocimiento único de cliente X, nadie puede reemplazarla, etc.">${ST.notes[e.id]||''}</textarea>
+  </div>`;
+
+  if (allDone) {
+    const lv = ldata(s);
+    h += `<div class="score-preview">
+      <div><div style="font-size:14px;font-weight:500;color:#0F6E56">Score: ${s}%</div><div style="font-size:12px;color:#0F6E56">${lv.label}</div></div>
+      <div style="font-size:12px;color:#0F6E56">Riesgo de salida: ${rk}</div>
+    </div>`;
+  }
+
+  h += `<div class="btn-row"><button class="btn btn-sec" onclick="go('selector')">Cancelar</button>
+    <button class="btn btn-pri" ${!allDone?'disabled':''} onclick="saveEval()">Guardar evaluación</button></div>`;
+  return h;
+}
+
+function htmlResultados() {
+  const evs = EMP.filter(e => complete(e.id)).sort((a,b) => calcScore(b.id) - calcScore(a.id));
+  const claves = evs.filter(e => lvl(calcScore(e.id)) === 'clave');
+  const relevantes = evs.filter(e => lvl(calcScore(e.id)) === 'relevante');
+  const estandar = evs.filter(e => lvl(calcScore(e.id)) === 'estandar');
+  const show = ST.filter==='todos' ? evs : ST.filter==='clave' ? claves : ST.filter==='relevante' ? relevantes : estandar;
+
+  let h = `<div style="margin-bottom:1.25rem">
+    <button class="btn btn-sec" onclick="go('selector')" style="padding:5px 10px;font-size:12px;margin-bottom:10px"><i class="ti ti-arrow-left"></i> Seguir evaluando</button>
+    <div class="brand-title" style="font-size:20px">Resultados del diagnóstico</div>
+    <div style="font-size:13px;color:var(--color-text-secondary);margin-top:2px">${evs.length} posiciones evaluadas · ${ST.ev||'RRHH'}</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.5rem">
+    <div class="sum-box"><div class="sum-num" style="color:#1D9E75">${claves.length}</div><div class="sum-lbl">Clave</div></div>
+    <div class="sum-box"><div class="sum-num" style="color:#BA7517">${relevantes.length}</div><div class="sum-lbl">Relevante</div></div>
+    <div class="sum-box"><div class="sum-num" style="color:#888780">${estandar.length}</div><div class="sum-lbl">Estándar</div></div>
+    <div class="sum-box"><div class="sum-num" style="color:var(--color-text-tertiary)">${41-evs.length}</div><div class="sum-lbl">Sin evaluar</div></div>
+  </div>`;
+
+  if (evs.length === 0) {
+    h += `<div class="card" style="text-align:center;padding:2rem;color:var(--color-text-secondary)">Todavía no hay posiciones evaluadas.</div>`;
+  } else {
+    h += `<div class="filter-row">
+      ${[['todos','Todas'],['clave','Solo clave'],['relevante','Relevantes'],['estandar','Estándar']].map(([v,l]) =>
+        `<button class="filter-btn${ST.filter===v?' active':''}" onclick="setFilter('${v}')">${l}</button>`).join('')}
+    </div>`;
+    show.forEach(e => {
+      const s = calcScore(e.id), lv = ldata(s), rk = ST.risk[e.id], ans = ST.ans[e.id];
+      const chips = DIMS.map(d => {
+        const vals = d.qs.map(q => q.inv ? (6-(ans[q.id]||0)) : (ans[q.id]||0));
+        return `<span class="dim-chip">${d.title.split(' ')[0]}: ${Math.round(vals.reduce((a,b)=>a+b,0)/d.qs.length*20)}%</span>`;
+      }).join('');
+      h += `<div class="res-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">${e.name}</div>
+            <div style="font-size:12px;color:var(--color-text-secondary)">${e.role} · ${AREA_LABELS[e.area]} · ${e.sede}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span class="score-pill ${lv.pill}">${lv.label} · ${s}%</span>
+            <span class="risk-badge ${rk==='alto'?'risk-alto':rk==='medio'?'risk-medio':'risk-bajo'}">Salida: ${rk}</span>
+          </div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${s}%;background:${lv.color}"></div></div>
+        <div class="dim-chips">${chips}</div>
+        ${ST.notes[e.id] ? `<div style="font-size:12px;color:var(--color-text-secondary);margin-top:8px;font-style:italic">"${ST.notes[e.id]}"</div>` : ''}
+        <div class="action-plan">
+          <div class="action-title"><i class="ti ti-circle-check" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Plan de acción recomendado</div>
+          ${lv.items.map(t => `<div class="action-item"><div class="action-dot" style="background:${lv.color}"></div><span>${t}</span></div>`).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  h += `<div class="btn-row" style="margin-top:1.5rem">
+    <button class="btn btn-sec" onclick="exportCSV()"><i class="ti ti-download"></i> Exportar CSV</button>
+  </div>`;
+  return h;
+}
+
+function setArea(a) { ST.area = a; paint(); }
+function openEmp(id) { ST.emp = id; ST.screen = 'eval'; paint(); }
+function setAns(qid, val) { if (!ST.ans[ST.emp]) ST.ans[ST.emp] = {}; ST.ans[ST.emp][qid] = val; paint(); }
+function setRisk(v) { ST.risk[ST.emp] = v; paint(); }
+function setNote(v) { ST.notes[ST.emp] = v; }
+function saveEval() { go('selector'); }
+function setFilter(v) { ST.filter = v; paint(); }
+
+function exportCSV() {
+  const evs = EMP.filter(e => complete(e.id)).sort((a,b) => calcScore(b.id) - calcScore(a.id));
+  const rows = ['Legajo,Nombre,Área,Sede,Rol,Reporta A,Score,Clasificación,Riesgo Salida,Notas',
+    ...evs.map(e => {
+      const s = calcScore(e.id), lv = ldata(s);
+      return `"${e.id}","${e.name}","${AREA_LABELS[e.area]}","${e.sede}","${e.role}","${e.rep}","${s}%","${lv.label}","${ST.risk[e.id]||''}","${(ST.notes[e.id]||'').replace(/"/g,"'")}"`;
+    })].join('\n');
+  const blob = new Blob([rows], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ATSA_Posiciones_Clave.csv'; a.click();
+}
+
+paint();
+</script>
+</body>
+</html>
